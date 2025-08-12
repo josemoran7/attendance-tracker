@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABA Technician Attendance Tracker (Katy West)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">ABA Technician Attendance Tracker (Katy West)</h1>
+            <p class="text-gray-600 mt-1">Manage technician attendance and disciplinary actions in real-time.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Technicians List -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Technicians</h2>
+                    <button id="addTechnicianBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold">Add New</button>
+                </div>
+                <div id="technicianList" class="space-y-3">
+                    <!-- Technician items will be dynamically inserted here -->
+                     <div class="text-center p-4 text-gray-500">Loading technicians...</div>
+                </div>
+            </div>
+
+            <!-- Right Column: Selected Technician Details -->
+            <div id="detailsView" class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md hidden">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-6">
+                    <div>
+                        <h2 id="detailsTechnicianName" class="text-2xl font-bold"></h2>
+                        <p class="text-gray-500">Attendance Log & Summary</p>
+                    </div>
+                    <button id="addLogBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors mt-4 md:mt-0 w-full md:w-auto">Log New Event</button>
+                </div>
+
+                <!-- Attendance Summary -->
+                <div id="attendanceSummary" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 text-center">
+                    <!-- Summary cards will be dynamically inserted here -->
+                </div>
+                
+                <!-- Attendance Log Table -->
+                <h3 class="text-lg font-semibold mb-4">Event History</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceLogTableBody" class="divide-y divide-gray-200">
+                           <!-- Log rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                     <div id="noLogsMessage" class="text-center p-8 text-gray-500 hidden">No attendance events have been logged for this technician.</div>
+                </div>
+            </div>
+            
+            <!-- Placeholder for when no technician is selected -->
+            <div id="placeholderView" class="lg:col-span-2 flex items-center justify-center bg-white p-6 rounded-xl shadow-md">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Select a Technician</h3>
+                    <p class="mt-1 text-sm text-gray-500">Choose a technician from the list to view their attendance details.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Technician Modal -->
+    <div id="addTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop modal-hidden">
+        <div class="modal bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 class="text-xl font-semibold mb-4">Add New Technician</h3>
+            <form id="addTechnicianForm">
+                <label for="technicianName" class="block text-sm font-medium text-gray-700">Technician Name</label>
+                <input type="text" id="technicianName" name="technicianName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancelAddTechnician" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save Technician</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Attendance Log Modal -->
+    <div id="addLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop modal-hidden">
+        <div class="modal bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 class="text-xl font-semibold mb-4">Log Attendance Event</h3>
+            <form id="addLogForm">
+                <div class="space-y-4">
+                    <div>
+                        <label for="logStartDate" class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input type="date" id="logStartDate" name="logStartDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="logEndDate" class="block text-sm font-medium text-gray-700">End Date (optional)</label>
+                        <input type="date" id="logEndDate" name="logEndDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="logType" class="block text-sm font-medium text-gray-700">Event Type</label>
+                        <select id="logType" name="logType" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            <option>Unplanned Excused</option>
+                            <option>Unexcused</option>
+                            <option>Late Arrival</option>
+                            <option>Part Day Absence</option>
+                            <option>No Call/No Show</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="logNotes" class="block text-sm font-medium text-gray-700">Notes</label>
+                        <textarea id="logNotes" name="logNotes" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                </div>
+                <p id="logError" class="text-red-500 text-sm mt-2 hidden"></p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancelAddLog" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Save Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Disciplinary Action Modal -->
+    <div id="actionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop modal-hidden">
+        <div class="modal bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                    <svg class="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                    </svg>
+                </div>
+                <h3 class="mt-4 text-xl font-semibold">Corrective Action Required</h3>
+                <div id="actionModalContent" class="mt-2 text-sm text-gray-600 space-y-3">
+                    <!-- Action details will be inserted here -->
+                </div>
+            </div>
+            <div class="mt-6 flex justify-center">
+                <button type="button" id="closeActionModal" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Acknowledge & Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, getDocs, onSnapshot, query, where, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration and Initialization ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-attendance-app';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Global State ---
+        let currentUserId = null;
+        let selectedTechnicianId = null;
+        let techniciansUnsubscribe = null;
+        let logsUnsubscribe = null;
+
+        // --- DOM Elements ---
+        const technicianListEl = document.getElementById('technicianList');
+        const addTechnicianBtn = document.getElementById('addTechnicianBtn');
+        const addTechnicianModal = document.getElementById('addTechnicianModal');
+        const addTechnicianForm = document.getElementById('addTechnicianForm');
+        const cancelAddTechnician = document.getElementById('cancelAddTechnician');
+        
+        const addLogBtn = document.getElementById('addLogBtn');
+        const addLogModal = document.getElementById('addLogModal');
+        const addLogForm = document.getElementById('addLogForm');
+        const cancelAddLog = document.getElementById('cancelAddLog');
+        const logError = document.getElementById('logError');
+        
+        const detailsView = document.getElementById('detailsView');
+        const placeholderView = document.getElementById('placeholderView');
+        const detailsTechnicianName = document.getElementById('detailsTechnicianName');
+        const attendanceLogTableBody = document.getElementById('attendanceLogTableBody');
+        const noLogsMessage = document.getElementById('noLogsMessage');
+        const attendanceSummary = document.getElementById('attendanceSummary');
+
+        const actionModal = document.getElementById('actionModal');
+        const actionModalContent = document.getElementById('actionModalContent');
+        const closeActionModal = document.getElementById('closeActionModal');
+
+        // --- Modal Control Functions ---
+        const toggleModal = (modal, show) => {
+            if (show) {
+                modal.classList.remove('modal-hidden');
+            } else {
+                modal.classList.add('modal-hidden');
+            }
+        };
+
+        // --- Firestore Collection References ---
+        const getTechniciansCollection = () => collection(db, `artifacts/${appId}/public/data/technicians`);
+        const getAttendanceLogsCollection = () => collection(db, `artifacts/${appId}/public/data/attendance_logs`);
+
+        // --- Initial Data Population ---
+        async function populateInitialTechnicians() {
+            const techniciansCol = getTechniciansCollection();
+            const snapshot = await getDocs(techniciansCol);
+            if (snapshot.empty) {
+                console.log("No technicians found. Populating initial data...");
+                const initialTechnicians = [
+                    'Lizbeth Rebollar', 'Akkshita Sundar', 'Destiny Craft', 
+                    'Elaina Quintero', 'Keiteria Stowers', 'Jennifer Moreno', 'Sarai Medrano'
+                ];
+                for (const name of initialTechnicians) {
+                    await addDoc(techniciansCol, {
+                        name: name,
+                        createdAt: new Date()
+                    });
+                }
+            }
+        }
+
+        // --- Disciplinary Action Logic ---
+        function calculateDisciplinaryActions(logs) {
+            const counts = {
+                'Unplanned Excused': 0,
+                'Unexcused': 0,
+                'Late Arrival': 0,
+                'Part Day Absence': 0,
+                'No Call/No Show': 0
+            };
+
+            logs.forEach(log => {
+                if (counts.hasOwnProperty(log.type)) {
+                    counts[log.type]++;
+                }
+            });
+
+            const derivedUnexcused = Math.floor(counts['Late Arrival'] / 2) + Math.floor(counts['Part Day Absence'] / 2);
+            const totalUnexcused = counts['Unexcused'] + derivedUnexcused;
+
+            const actions = [];
+
+            // Unplanned Excused Logic
+            if (counts['Unplanned Excused'] === 3) {
+                actions.push({ type: 'Unplanned Excused', level: 3, message: '<strong>Verbal Warning:</strong> 3rd unplanned excused absence. Use of PTO required.' });
+            } else if (counts['Unplanned Excused'] === 4) {
+                actions.push({ type: 'Unplanned Excused', level: 4, message: '<strong>Written Warning:</strong> 4th unplanned excused absence. Use of PTO required.' });
+            } else if (counts['Unplanned Excused'] >= 5) {
+                actions.push({ type: 'Unplanned Excused', level: 5, message: '<strong>Final Warning & Meeting:</strong> 5th+ unplanned excused absence. Meeting with BCBA/HR, written warning, and potential termination.' });
+            }
+
+            // Unexcused Absences Logic
+            if (totalUnexcused === 2) {
+                actions.push({ type: 'Unexcused', level: 2, message: '<strong>Verbal Warning:</strong> 2nd unexcused absence. Use of PTO required.' });
+            } else if (totalUnexcused === 3) {
+                actions.push({ type: 'Unexcused', level: 3, message: '<strong>Written Warning:</strong> 3rd unexcused absence. Use of PTO required.' });
+            } else if (totalUnexcused >= 4) {
+                actions.push({ type: 'Unexcused', level: 4, message: '<strong>Final Warning & Meeting:</strong> 4th+ unexcused absence. Meeting with BCBA/HR, written warning, and potential termination.' });
+            }
+
+            // No Call/No Show Logic
+            if (counts['No Call/No Show'] === 1) {
+                actions.push({ type: 'No Call/No Show', level: 1, message: '<strong>Written Warning & Meeting:</strong> 1st no call/no show. Meeting with BCBA/HR required.' });
+            } else if (counts['No Call/No Show'] >= 2) {
+                actions.push({ type: 'No Call/No Show', level: 2, message: '<strong>Final Warning & Termination:</strong> 2nd+ no call/no show. Meeting with BCBA/HR, written warning, and termination.' });
+            }
+            
+            return { actions, counts, derivedUnexcused, totalUnexcused };
+        }
+
+        // --- UI Rendering Functions ---
+        function renderTechnicians(technicians) {
+            technicianListEl.innerHTML = '';
+            if (technicians.length === 0) {
+                technicianListEl.innerHTML = `<div class="text-center p-4 text-gray-500">No technicians added yet.</div>`;
+                return;
+            }
+            
+            // Sort technicians alphabetically by name
+            technicians.sort((a, b) => a.name.localeCompare(b.name));
+
+            technicians.forEach(tech => {
+                const isActive = tech.id === selectedTechnicianId;
+                const techEl = document.createElement('div');
+                techEl.className = `p-3 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-blue-100 text-blue-800 font-semibold' : 'hover:bg-gray-100'}`;
+                techEl.textContent = tech.name;
+                techEl.dataset.id = tech.id;
+                techEl.addEventListener('click', () => selectTechnician(tech.id));
+                technicianListEl.appendChild(techEl);
+            });
+        }
+
+        function renderAttendanceLog(logs) {
+            attendanceLogTableBody.innerHTML = '';
+            if (logs.length === 0) {
+                noLogsMessage.classList.remove('hidden');
+                return;
+            }
+            noLogsMessage.classList.add('hidden');
+            
+            // Sort logs by date, most recent first
+            logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            logs.forEach(log => {
+                const row = attendanceLogTableBody.insertRow();
+                row.innerHTML = `
+                    <td class="py-3 px-4 whitespace-nowrap">${log.date}</td>
+                    <td class="py-3 px-4 whitespace-nowrap">${log.type}</td>
+                    <td class="py-3 px-4">${log.notes || ''}</td>
+                `;
+            });
+        }
+        
+        function renderSummary(analysis) {
+            attendanceSummary.innerHTML = `
+                ${createSummaryCard('Late Arrivals', analysis.counts['Late Arrival'], 'bg-orange-100 text-orange-800')}
+                ${createSummaryCard('Part Day', analysis.counts['Part Day Absence'], 'bg-purple-100 text-purple-800')}
+                ${createSummaryCard('Unplanned', analysis.counts['Unplanned Excused'], 'bg-yellow-100 text-yellow-800')}
+                ${createSummaryCard('Unexcused', analysis.totalUnexcused, 'bg-red-100 text-red-800')}
+                ${createSummaryCard('NCNS', analysis.counts['No Call/No Show'], 'bg-red-200 text-red-900')}
+            `;
+        }
+
+        function createSummaryCard(title, value, colorClasses) {
+            return `
+                <div class="p-3 rounded-lg ${colorClasses}">
+                    <div class="text-2xl font-bold">${value}</div>
+                    <div class="text-xs font-medium uppercase tracking-wider">${title}</div>
+                </div>
+            `;
+        }
+
+
+        // --- Main Application Logic ---
+        async function selectTechnician(technicianId) {
+            if (selectedTechnicianId === technicianId) return;
+            
+            selectedTechnicianId = technicianId;
+            
+            // Update UI to show selected state
+            const techSnapshot = await getDocs(getTechniciansCollection());
+            const allTechnicians = techSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderTechnicians(allTechnicians);
+
+            // Fetch and display details
+            const technicianDoc = allTechnicians.find(t => t.id === technicianId);
+            if(technicianDoc) {
+                detailsTechnicianName.textContent = technicianDoc.name;
+                placeholderView.classList.add('hidden');
+                detailsView.classList.remove('hidden');
+
+                // Unsubscribe from previous log listener if it exists
+                if (logsUnsubscribe) {
+                    logsUnsubscribe();
+                }
+
+                // Listen for logs for the new technician
+                const logsQuery = query(getAttendanceLogsCollection(), where("technicianId", "==", technicianId));
+                logsUnsubscribe = onSnapshot(logsQuery, (snapshot) => {
+                    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderAttendanceLog(logs);
+                    
+                    const analysis = calculateDisciplinaryActions(logs);
+                    renderSummary(analysis);
+                    
+                    if (analysis.actions.length > 0) {
+                        actionModalContent.innerHTML = analysis.actions.map(a => `<p>${a.message}</p>`).join('');
+                        toggleModal(actionModal, true);
+                    }
+                });
+            }
+        }
+        
+        // --- Event Listeners ---
+        addTechnicianBtn.addEventListener('click', () => toggleModal(addTechnicianModal, true));
+        cancelAddTechnician.addEventListener('click', () => toggleModal(addTechnicianModal, false));
+        addTechnicianForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = e.target.technicianName.value.trim();
+            if (name) {
+                await addDoc(getTechniciansCollection(), { name: name, createdAt: new Date() });
+                addTechnicianForm.reset();
+                toggleModal(addTechnicianModal, false);
+            }
+        });
+
+        addLogBtn.addEventListener('click', () => {
+            addLogForm.reset();
+            logError.classList.add('hidden');
+            document.getElementById('logStartDate').valueAsDate = new Date();
+            toggleModal(addLogModal, true);
+        });
+        cancelAddLog.addEventListener('click', () => toggleModal(addLogModal, false));
+        addLogForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedTechnicianId) return;
+
+            logError.classList.add('hidden');
+
+            const startDateStr = e.target.logStartDate.value;
+            const endDateStr = e.target.logEndDate.value;
+            const type = e.target.logType.value;
+            const notes = e.target.logNotes.value.trim();
+
+            const startDate = new Date(startDateStr + 'T00:00:00');
+            const endDate = endDateStr ? new Date(endDateStr + 'T00:00:00') : startDate;
+
+            if (endDate < startDate) {
+                logError.textContent = 'End date cannot be before the start date.';
+                logError.classList.remove('hidden');
+                return;
+            }
+
+            let currentDate = new Date(startDate);
+            const promises = [];
+
+            while (currentDate <= endDate) {
+                const logData = {
+                    technicianId: selectedTechnicianId,
+                    date: currentDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                    type: type,
+                    notes: notes,
+                    createdAt: new Date()
+                };
+                promises.push(addDoc(getAttendanceLogsCollection(), logData));
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            await Promise.all(promises);
+            addLogForm.reset();
+            toggleModal(addLogModal, false);
+        });
+
+        closeActionModal.addEventListener('click', () => toggleModal(actionModal, false));
+
+        // --- Authentication and Initialization ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                console.log("Authenticated user:", currentUserId);
+
+                // Populate initial data if necessary
+                await populateInitialTechnicians();
+                
+                // Subscribe to technician updates
+                if (techniciansUnsubscribe) techniciansUnsubscribe();
+                techniciansUnsubscribe = onSnapshot(getTechniciansCollection(), (snapshot) => {
+                    const technicians = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderTechnicians(technicians);
+                });
+
+            } else {
+                console.log("User is not signed in.");
+            }
+        });
+
+        // Sign in user
+        (async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Authentication failed:", error);
+                document.body.innerHTML = `<div class="p-8 text-center text-red-600">Failed to initialize application. Could not authenticate with the database. Please check console for errors.</div>`;
+            }
+        })();
+
+    </script>
+</body>
+</html>
