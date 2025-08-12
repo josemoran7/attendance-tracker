@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -167,18 +167,12 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, addDoc, getDocs, onSnapshot, query, where, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration and Initialization ---
-        const firebaseConfig = {
-          apiKey: "AIzaSyBikT4EwPF2_zqqD2I19bi0AbssPvEZxCg",
-          authDomain: "katy-west-rbtattendance.firebaseapp.com",
-          projectId: "katy-west-rbtattendance",
-          storageBucket: "katy-west-rbtattendance.appspot.com",
-          messagingSenderId: "786567902220",
-          appId: "1:786567902220:web:4ccdad729ce7be141d2a29"
-        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-attendance-app';
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -224,8 +218,8 @@
         };
 
         // --- Firestore Collection References ---
-        const getTechniciansCollection = () => collection(db, 'technicians');
-        const getAttendanceLogsCollection = () => collection(db, 'attendance_logs');
+        const getTechniciansCollection = () => collection(db, `artifacts/${appId}/public/data/technicians`);
+        const getAttendanceLogsCollection = () => collection(db, `artifacts/${appId}/public/data/attendance_logs`);
 
         // --- Initial Data Population ---
         async function populateInitialTechnicians() {
@@ -461,30 +455,37 @@
         closeActionModal.addEventListener('click', () => toggleModal(actionModal, false));
 
         // --- Authentication and Initialization ---
-        async function initializeAppLogic() {
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    console.log("Authenticated user:", currentUserId);
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                console.log("Authenticated user:", currentUserId);
 
-                    await populateInitialTechnicians();
-                    
-                    if (techniciansUnsubscribe) techniciansUnsubscribe();
-                    techniciansUnsubscribe = onSnapshot(getTechniciansCollection(), (snapshot) => {
-                        const technicians = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        renderTechnicians(technicians);
-                    });
-                }
-            });
-        }
+                // Populate initial data if necessary
+                await populateInitialTechnicians();
+                
+                // Subscribe to technician updates
+                if (techniciansUnsubscribe) techniciansUnsubscribe();
+                techniciansUnsubscribe = onSnapshot(getTechniciansCollection(), (snapshot) => {
+                    const technicians = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderTechnicians(technicians);
+                });
 
+            } else {
+                console.log("User is not signed in.");
+            }
+        });
+
+        // Sign in user
         (async () => {
             try {
-                await signInAnonymously(auth);
-                await initializeAppLogic();
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
             } catch (error) {
                 console.error("Authentication failed:", error);
-                document.body.innerHTML = `<div class="p-8 text-center text-red-600">Failed to initialize application. Could not authenticate with the database. Please check your Firebase Security Rules and ensure Anonymous Authentication is enabled.</div>`;
+                document.body.innerHTML = `<div class="p-8 text-center text-red-600">Failed to initialize application. Could not authenticate with the database. Please check console for errors.</div>`;
             }
         })();
 
