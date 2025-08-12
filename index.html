@@ -171,8 +171,14 @@
         import { getFirestore, doc, collection, addDoc, getDocs, onSnapshot, query, where, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration and Initialization ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-attendance-app';
+        const firebaseConfig = {
+    apiKey: "AIzaSyBikT4EwPF2_zqqD2I19bi0AbssPvEZxCg",
+    authDomain: "katy-west-rbtattendance.firebaseapp.com",
+    projectId: "katy-west-rbtattendance",
+    storageBucket: "katy-west-rbtattendance.firebasestorage.app",
+    messagingSenderId: "786567902220",
+    appId: "1:786567902220:web:4ccdad729ce7be141d2a29"
+  };
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
