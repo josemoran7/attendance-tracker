@@ -165,13 +165,13 @@
 
 
     <script type="module">
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, addDoc, getDocs, onSnapshot, query, where, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-        // --- Firebase Configuration and Initialization ---
-        const firebaseConfig = {
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
     apiKey: "AIzaSyBikT4EwPF2_zqqD2I19bi0AbssPvEZxCg",
     authDomain: "katy-west-rbtattendance.firebaseapp.com",
     projectId: "katy-west-rbtattendance",
@@ -179,8 +179,10 @@
     messagingSenderId: "786567902220",
     appId: "1:786567902220:web:4ccdad729ce7be141d2a29"
   };
-        
-        const app = initializeApp(firebaseConfig);
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
         const auth = getAuth(app);
         const db = getFirestore(app);
 
