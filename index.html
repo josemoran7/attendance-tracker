@@ -224,7 +224,6 @@
         };
 
         // --- Firestore Collection References ---
-        // FIX: Using a valid, single-segment path for top-level collections.
         const getTechniciansCollection = () => collection(db, 'technicians');
         const getAttendanceLogsCollection = () => collection(db, 'attendance_logs');
 
@@ -462,26 +461,32 @@
         closeActionModal.addEventListener('click', () => toggleModal(actionModal, false));
 
         // --- Authentication and Initialization ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUserId = user.uid;
-                console.log("Authenticated user:", currentUserId);
+        async function initializeAppLogic() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    console.log("Authenticated user:", currentUserId);
 
-                // Populate initial data if necessary
-                await populateInitialTechnicians();
-                
-                // Subscribe to technician updates
-                if (techniciansUnsubscribe) techniciansUnsubscribe();
-                techniciansUnsubscribe = onSnapshot(getTechniciansCollection(), (snapshot) => {
-                    const technicians = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderTechnicians( technicians);
-                });
+                    await populateInitialTechnicians();
+                    
+                    if (techniciansUnsubscribe) techniciansUnsubscribe();
+                    techniciansUnsubscribe = onSnapshot(getTechniciansCollection(), (snapshot) => {
+                        const technicians = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderTechnicians(technicians);
+                    });
+                }
+            });
+        }
 
-            } else {
-                console.log("User is not signed in. Attempting anonymous sign in...");
-                 await signInAnonymously(auth);
+        (async () => {
+            try {
+                await signInAnonymously(auth);
+                await initializeAppLogic();
+            } catch (error) {
+                console.error("Authentication failed:", error);
+                document.body.innerHTML = `<div class="p-8 text-center text-red-600">Failed to initialize application. Could not authenticate with the database. Please check your Firebase Security Rules and ensure Anonymous Authentication is enabled.</div>`;
             }
-        });
+        })();
 
     </script>
 </body>
