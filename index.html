@@ -165,24 +165,22 @@
 
 
     <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, getDocs, onSnapshot, query, where, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyBikT4EwPF2_zqqD2I19bi0AbssPvEZxCg",
-    authDomain: "katy-west-rbtattendance.firebaseapp.com",
-    projectId: "katy-west-rbtattendance",
-    storageBucket: "katy-west-rbtattendance.firebasestorage.app",
-    messagingSenderId: "786567902220",
-    appId: "1:786567902220:web:4ccdad729ce7be141d2a29"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
+        // --- Firebase Configuration and Initialization ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBikT4EwPF2_zqqD2I19bi0AbssPvEZxCg",
+          authDomain: "katy-west-rbtattendance.firebaseapp.com",
+          projectId: "katy-west-rbtattendance",
+          storageBucket: "katy-west-rbtattendance.appspot.com",
+          messagingSenderId: "786567902220",
+          appId: "1:786567902220:web:4ccdad729ce7be141d2a29"
+        };
+        
+        const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
@@ -226,8 +224,9 @@
         };
 
         // --- Firestore Collection References ---
-        const getTechniciansCollection = () => collection(db, `artifacts/${appId}/public/data/technicians`);
-        const getAttendanceLogsCollection = () => collection(db, `artifacts/${appId}/public/data/attendance_logs`);
+        // FIX: Using a valid, single-segment path for top-level collections.
+        const getTechniciansCollection = () => collection(db, 'technicians');
+        const getAttendanceLogsCollection = () => collection(db, 'attendance_logs');
 
         // --- Initial Data Population ---
         async function populateInitialTechnicians() {
@@ -475,27 +474,14 @@
                 if (techniciansUnsubscribe) techniciansUnsubscribe();
                 techniciansUnsubscribe = onSnapshot(getTechniciansCollection(), (snapshot) => {
                     const technicians = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderTechnicians(technicians);
+                    renderTechnicians( technicians);
                 });
 
             } else {
-                console.log("User is not signed in.");
+                console.log("User is not signed in. Attempting anonymous sign in...");
+                 await signInAnonymously(auth);
             }
         });
-
-        // Sign in user
-        (async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Authentication failed:", error);
-                document.body.innerHTML = `<div class="p-8 text-center text-red-600">Failed to initialize application. Could not authenticate with the database. Please check console for errors.</div>`;
-            }
-        })();
 
     </script>
 </body>
